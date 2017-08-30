@@ -1,0 +1,20 @@
+InventorySetup.GET;
+IF GetSku THEN BEGIN 
+  LastDirectCost := StockkeepingUnit."Last Direct Cost";
+  "Unit Cost" := StockkeepingUnit."Unit Cost";
+END ELSE BEGIN
+  LastDirectCost := Item."Last Direct Cost";
+  "Unit Cost" := Item."Unit Cost";
+END;
+IF Item."Costing Method" <> Item."Costing Method"::Standard THEN
+  "Unit Cost" := ROUND("Unit Cost",GeneralLedgerSetup."Unit-Amount Rounding Precision");
+
+IF (Item."Costing Method" = Item."Costing Method"::Average) OR 
+   (Item."Costing Method" = Item."Costing Method"::FIFO) THEN BEGIN
+  Item.SETFILTER("Date Filter",'..%1',OutboundWarehouseHeading."Posting Date");
+  IF InventorySetup."Average Cost Calc. Type" = InventorySetup."Average Cost Calc. Type"::" " THEN
+    Item.SETRANGE("Location Filter")
+  ELSE
+    Item.SETRANGE("Location Filter","Outbound Warehouse");
+  ItemCostManagement.CalculateAverageCost(Item,"Unit Cost",PriceCostDA);
+END;
